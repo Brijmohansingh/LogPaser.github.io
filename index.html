@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>File Parser</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f9f9f9;
+        margin: 0;
+        padding: 0;
+      }
+  
+      h1 {
+        text-align: center;
+        color: #555;
+        margin: 20px 0;
+        font-size: 30px;
+      }
+  
+      .container {
+        max-width: 500px;
+        margin: 0 auto;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+  
+      .file-input,
+      .word-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        margin-bottom: 10px;
+      }
+  
+      .parse-button {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+  
+      .parse-button:hover {
+        background-color: #45a049;
+      }
+  
+      .result {
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #fff;
+        color: #333;
+        font-size: 14px;
+        line-height: 1.5;
+        overflow: auto;
+        max-height: 300px;
+      }
+  
+      .highlight {
+        background-color: yellow;
+        font-weight: bold;
+      }
+  
+      .copy-button {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        background-color: #2196F3;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-top: 10px;
+      }
+  
+      .copy-button:hover {
+        background-color: #0F75BD;
+      }
+  
+      .dashboard {
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #fff;
+      }
+  
+      .keyword-details {
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #fff;
+        color: #333;
+        font-size: 14px;
+        line-height: 1.5;
+        overflow: auto;
+        max-height: 300px;
+      }
+  
+      .keyword-occurrences {
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #fff;
+        color: #333;
+        font-size: 14px;
+        line-height: 1.5;
+        overflow: auto;
+        max-height: 300px;
+      }
+  
+      .attribution {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 12px;
+        color: #888;
+      }
+  
+      .attribution a {
+        color: #888;
+        text-decoration: none;
+      }
+  
+      .attribution a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  
+  
+<body>
+  <div class="container">
+    <h1>File Parser</h1>
+    <input type="file" id="fileInput" class="file-input" />
+    <input type="text" id="wordInput" class="word-input" placeholder="Enter keywords to search (space-separated)" />
+    <button onclick="parseFile()" class="parse-button">Parse</button>
+    <div id="dashboard" class="dashboard">
+      <canvas id="chart"></canvas>
+    </div>
+    <div id="result" class="result"></div>
+    <button onclick="copyResult()" class="copy-button">Copy</button>
+  </div>
+  <div id="keywordDetails"></div>
+  <div id="keywordOccurrences"></div>
+
+  <script>
+    var lines; // Declare lines variable outside the parseFile function
+    var chartCanvas, chartData; // Declare chart variables in the global scope
+  
+    function parseFile() {
+      var fileInput = document.getElementById('fileInput');
+      var wordInput = document.getElementById('wordInput');
+    
+      var file = fileInput.files[0];
+      var keywords = wordInput.value.trim().split(' ');
+    
+      var reader = new FileReader();
+      reader.onload = function(event) {
+        var content = event.target.result;
+        lines = content.split('\n');
+    
+        var resultContainer = document.getElementById('result');
+        var dashboardContainer = document.getElementById('dashboard');
+        resultContainer.innerHTML = '';
+    
+        var keywordCounts = {};
+        for (var i = 0; i < keywords.length; i++) {
+          keywordCounts[keywords[i]] = 0;
+        }
+    
+        for (var j = 0; j < lines.length; j++) {
+          var line = lines[j];
+          var lineLowercase = line.toLowerCase();
+    
+          for (var k = 0; k < keywords.length; k++) {
+            var keyword = keywords[k].toLowerCase();
+            var keywordIndex = lineLowercase.indexOf(keyword);
+            if (keywordIndex !== -1) {
+              var lineWithHighlight = line.replace(new RegExp(keyword, 'gi'), '<span class="highlight">$&</span>');
+              resultContainer.innerHTML += 'Line ' + (j + 1) + ': ' + lineWithHighlight + '<br>';
+    
+              keywordCounts[keywords[k]]++;
+            }
+          }
+        }
+    
+        dashboardContainer.innerHTML = '<canvas id="chart"></canvas>';
+        chartCanvas = document.getElementById('chart').getContext('2d');
+        chartData = {
+          labels: Object.keys(keywordCounts),
+          datasets: [
+            {
+              label: 'Occurrences',
+              data: Object.values(keywordCounts),
+              backgroundColor: 'rgba(54, 162, 235, 0.5)',
+              borderColor: 'rgba(54, 162, 235, 1)',
+              borderWidth: 1
+            }
+          ]
+        };
+        var chartData = {
+          labels: Object.keys(keywordCounts),
+          datasets: [
+            {
+              label: 'Occurrences',
+              data: Object.values(keywordCounts),
+              backgroundColor: ['#ff6384', '#36a2eb', '#ffce56'], // Add custom colors here
+              borderColor: 'rgba(54, 162, 235, 1)',
+              borderWidth: 1
+            }
+          ]
+        };
+        
+        var chartOptions = {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              stepSize: 1
+            }
+          },
+          tooltips: {
+            enabled: true,
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              label: function(context) {
+                return 'Occurrences: ' + context.parsed.y;
+              }
+            }
+          },
+          onClick: function(event, elements) {
+            if (elements.length > 0) {
+              var clickedIndex = elements[0].index;
+              var clickedKeyword = chartData.labels[clickedIndex];
+              showKeywordOccurrences(clickedKeyword);
+            }
+          }
+        };
+        
+        var chart = new Chart(chartCanvas, {
+          type: 'bar',
+          data: chartData,
+          options: chartOptions
+        });
+    
+        // Add a click event listener to the chart
+        chartCanvas.onclick = function(event) {
+          var activePoints = chart.getElementsAtEvent(event);
+          if (activePoints.length > 0) {
+            var clickedIndex = activePoints[0].index;
+            var clickedKeyword = chartData.labels[clickedIndex];
+            showKeywordOccurrences(clickedKeyword);
+          }
+        };
+      };
+    
+      reader.readAsText(file);
+    }
+    
+  
+    function copyResult() {
+      var resultDiv = document.getElementById('result');
+      var resultText = resultDiv.textContent || resultDiv.innerText;
+    
+      var textarea = document.createElement('textarea');
+      textarea.value = resultText;
+    
+      document.body.appendChild(textarea);
+    
+      textarea.select();
+      document.execCommand('copy');
+    
+      document.body.removeChild(textarea);
+    
+      alert('Result copied to clipboard!');
+    }
+    
+  
+    function showKeyword(keyword) {
+      var keywordDetailsContainer = document.getElementById('keywordDetails');
+      keywordDetailsContainer.innerHTML = '';
+    
+      var occurrences = [];
+      for (var j = 0; j < lines.length; j++) {
+        var line = lines[j];
+        var lineLowercase = line.toLowerCase();
+        var keywordIndex = lineLowercase.indexOf(keyword.toLowerCase());
+        if (keywordIndex !== -1) {
+          occurrences.push({
+            lineNumber: j + 1,
+            lineContent: line
+          });
+        }
+      }
+    
+      if (occurrences.length > 0) {
+        var occurrencesCount = document.createElement('p');
+        occurrencesCount.innerText = 'Occurrences: ' + occurrences.length;
+        keywordDetailsContainer.appendChild(occurrencesCount);
+    
+        var occurrencesList = document.createElement('ul');
+        occurrencesList.className = 'keyword-occurrences';
+        keywordDetailsContainer.appendChild(occurrencesList);
+    
+        for (var i = 0; i < occurrences.length; i++) {
+          var occurrence = occurrences[i];
+          var listItem = document.createElement('li');
+          var lineWithHighlight = occurrence.lineContent.replace(new RegExp(keyword, 'gi'), '<span class="highlight">$&</span>');
+          listItem.innerHTML = 'Line ' + occurrence.lineNumber + ': ' + lineWithHighlight;
+          occurrencesList.appendChild(listItem);
+        }
+      } else {
+        var noOccurrencesMessage = document.createElement('p');
+        noOccurrencesMessage.innerText = 'No occurrences found.';
+        keywordDetailsContainer.appendChild(noOccurrencesMessage);
+      }
+    
+      // Scroll to the keyword details container
+      keywordDetailsContainer.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+
+// Add a click event listener to the chart
+chartCanvas.onclick = function(event) {
+  var activePoints = chart.getElementsAtEvent(event);
+  if (activePoints.length > 0) {
+    var clickedIndex = activePoints[0].index;
+    var clickedKeyword = chartData.labels[clickedIndex];
+    showKeywordOccurrences(clickedKeyword);
+  }
+};
+
+
+    
+function showKeywordOccurrences(keyword) {
+  var keywordOccurrencesContainer = document.getElementById('keywordOccurrences');
+  keywordOccurrencesContainer.innerHTML = '';
+
+  var occurrences = [];
+  for (var j = 0; j < lines.length; j++) {
+    var line = lines[j];
+    var lineLowercase = line.toLowerCase();
+    var keywordIndex = lineLowercase.indexOf(keyword.toLowerCase());
+    if (keywordIndex !== -1) {
+      occurrences.push({
+        lineNumber: j + 1,
+        lineContent: line
+      });
+    }
+  }
+
+  if (occurrences.length > 0) {
+    var occurrencesCountLink = document.createElement('a');
+    occurrencesCountLink.href = '#';
+    occurrencesCountLink.innerText = 'Occurrences: ' + occurrences.length;
+    occurrencesCountLink.addEventListener('click', function() {
+      openOccurrencesDetails(occurrences);
+    });
+    keywordOccurrencesContainer.appendChild(occurrencesCountLink);
+  } else {
+    var noOccurrencesMessage = document.createElement('p');
+    noOccurrencesMessage.innerText = 'No occurrences found.';
+    keywordOccurrencesContainer.appendChild(noOccurrencesMessage);
+  }
+
+  // Scroll to the keyword occurrences container
+  keywordOccurrencesContainer.scrollIntoView({ behavior: 'smooth' });
+}
+// Add a click event listener to the chart
+chartCanvas.onclick = function(event) {
+  var activePoints = chart.getElementsAtEvent(event);
+  if (activePoints.length > 0) {
+    var clickedIndex = activePoints[0].index;
+    var clickedKeyword = chartData.labels[clickedIndex];
+    showKeywordOccurrences(clickedKeyword);
+  }}
+
+function openOccurrencesDetails(occurrences) {
+  var textContent = '';
+  for (var i = 0; i < occurrences.length; i++) {
+    var occurrence = occurrences[i];
+    textContent += 'Line ' + occurrence.lineNumber + ': ' + occurrence.lineContent + '\n';
+  }
+
+  var blob = new Blob([textContent], { type: 'text/plain' });
+  var url = URL.createObjectURL(blob);
+
+  var link = document.createElement('a');
+  link.href = url;
+  link.download = 'keyword_occurrences.txt';
+  link.target = '_blank';
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+
+
+
+
+</script>
+</body>
+</html>
