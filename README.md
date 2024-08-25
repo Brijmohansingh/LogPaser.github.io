@@ -27,8 +27,7 @@ Background pattern: Generated using https://www.toptal.com/designers/subtlepatte
 Author:
 Brijmohan singh - https://github.com/Brijmohansingh
 
-Acknowledgements:
-Special thanks to [anyone you'd like to acknowledge for their contributions or support].
+
 
 Contact:
 For any inquiries or support, please contact brijmohansingh26@gmail.com
